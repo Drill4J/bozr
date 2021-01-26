@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"moul.io/http2curl"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"moul.io/http2curl"
 )
 
 const (
@@ -178,6 +178,11 @@ func runSuite(suite TestSuite) []TestResult {
 		vars := NewVars(hostFlag)
 		callArgsErr := vars.AddAll(testCase.Args)
 		for i, c := range testCase.Calls {
+			if c.On.Headers == nil {
+				c.On.Headers = map[string]string{}
+			}
+			c.On.Headers["drill-test-name"] = testCase.Name
+			c.On.Headers["drill-session-id"] = "bozrtest"
 
 			throttle.RunOrPause()
 
@@ -220,7 +225,7 @@ func runSuite(suite TestSuite) []TestResult {
 }
 
 func createReporter() Reporter {
-	reporters := []Reporter{NewConsoleReporter(infoFlag||infoCurlFlag)}
+	reporters := []Reporter{NewConsoleReporter(infoFlag || infoCurlFlag)}
 	if junitFlag {
 		path, _ := filepath.Abs(junitOutputFlag)
 		reporters = append(reporters, NewJUnitReporter(path))
