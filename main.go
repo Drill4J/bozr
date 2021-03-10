@@ -63,6 +63,7 @@ var (
 	drillTestType   string
 	drillAdminUrl   string
 	drillSessionId  string = "asd"
+	drillAgentId    string
 
 	debug *log.Logger
 )
@@ -105,6 +106,7 @@ func main() {
 	flag.StringVar(&drillTestType, "drillTestType", "", "pr tests")
 	flag.StringVar(&drillAdminUrl, "drillAdminUrl", "", "http://ecse0050029e.epam.com:8090")
 	flag.StringVar(&drillSessionId, "drillSessionId", "", "any unique string")
+	flag.StringVar(&drillAgentId, "drillAgentId", "", "zeyt")
 	flag.Parse()
 
 	initLogger()
@@ -545,7 +547,7 @@ func stopDrillSession() {
 
 func drillDispatchAction(requestBody *bytes.Buffer) *http.Response {
 	client := &http.Client{}
-	req, _ := http.NewRequest("POST", drillAdminUrl+"/api/agents/test-pet-standalone/plugins/test2code/dispatch-action", requestBody)
+	req, _ := http.NewRequest("POST", drillAdminUrl+"/api/agents/"+drillAgentId+"/plugins/test2code/dispatch-action", requestBody)
 	req.Header.Add("Content-type", `application/json`)
 	req.Header.Add("Authorization", "Bearer "+getDrillToken())
 	res, _ := client.Do(req)
