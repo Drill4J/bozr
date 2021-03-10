@@ -188,7 +188,7 @@ func runSuite(suite TestSuite) []TestResult {
 				c.On.Headers = map[string]string{}
 			}
 			c.On.Headers["drill-test-name"] = testCase.Name
-			c.On.Headers["drill-session-id"] = "bozrtest"
+			c.On.Headers["drill-session-id"] = drillSessionId
 
 			throttle.RunOrPause()
 
