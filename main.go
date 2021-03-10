@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -59,6 +60,9 @@ var (
 	versionFlag     bool
 	junitFlag       bool
 	junitOutputFlag string
+	drillTestType   string
+	drillAdminUrl   string
+	drillSessionId  string = "asd"
 
 	debug *log.Logger
 )
@@ -98,7 +102,9 @@ func main() {
 
 	flag.BoolVar(&junitFlag, "junit", false, "Enable junit xml reporter")
 	flag.StringVar(&junitOutputFlag, "junit-output", "./report", "Destination for junit report files. Default ")
-
+	flag.StringVar(&drillTestType, "drillTestType", "", "pr tests")
+	flag.StringVar(&drillAdminUrl, "drillAdminUrl", "", "http://ecse0050029e.epam.com:8090")
+	flag.StringVar(&drillSessionId, "drillSessionId", "", "any unique string")
 	flag.Parse()
 
 	initLogger()
@@ -158,7 +164,7 @@ func runSuite(suite TestSuite) []TestResult {
 	results := []TestResult{}
 
 	throttle := NewThrottle(throttleFlag, time.Second)
-
+	startDrillSession()
 	for _, testCase := range suite.Cases {
 
 		result := TestResult{
@@ -220,6 +226,7 @@ func runSuite(suite TestSuite) []TestResult {
 
 		results = append(results, result)
 	}
+	stopDrillSession()
 
 	return results
 }
@@ -507,4 +514,40 @@ func debugf(format string, v ...interface{}) {
 	}
 
 	debug.Printf(format, v...)
+}
+
+func getDrillToken() string {
+	resp, _ := http.Post(drillAdminUrl+"/api/login", "application/json", nil)
+	return resp.Header.Get("Authorization")
+}
+
+func startDrillSession() {
+	postBody, _ := json.Marshal(map[string]interface{}{
+		"type": "START",
+		"payload": map[string]interface{}{
+			"sessionId":  drillSessionId,
+			"testType":   drillTestType,
+			"isGlobal":   false,
+			"isRealtime": true,
+		},
+	})
+	drillDispatchAction(bytes.NewBuffer(postBody))
+}
+func stopDrillSession() {
+	postBody, _ := json.Marshal(map[string]interface{}{
+		"type": "STOP",
+		"payload": map[string]interface{}{
+			"sessionId": drillSessionId,
+		},
+	})
+	drillDispatchAction(bytes.NewBuffer(postBody))
+}
+
+func drillDispatchAction(requestBody *bytes.Buffer) *http.Response {
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", drillAdminUrl+"/api/agents/test-pet-standalone/plugins/test2code/dispatch-action", requestBody)
+	req.Header.Add("Content-type", `application/json`)
+	req.Header.Add("Authorization", "Bearer "+getDrillToken())
+	res, _ := client.Do(req)
+	return res
 }
